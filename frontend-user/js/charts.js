@@ -7,10 +7,15 @@ class ChartManager {
         this.charts = {};
     }
 
-    // 初始化漏斗图
+    // 初始化漏斗图（重试时先销毁旧实例，避免重复挂载）
     initFunnelChart(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
+
+        if (this.charts.funnel) {
+            this.charts.funnel.dispose();
+            delete this.charts.funnel;
+        }
 
         const chart = echarts.init(container);
         this.charts.funnel = chart;
@@ -80,10 +85,15 @@ class ChartManager {
         return chart;
     }
 
-    // 初始化雷达图
+    // 初始化雷达图（重试时先销毁旧实例，避免重复挂载）
     initRadarChart(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
+
+        if (this.charts.radar) {
+            this.charts.radar.dispose();
+            delete this.charts.radar;
+        }
 
         const chart = echarts.init(container);
         this.charts.radar = chart;

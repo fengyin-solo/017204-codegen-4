@@ -6,30 +6,37 @@ class ComponentRenderer {
     constructor() {
         this.typewriterText = '基于2026年"拉新"战略核心，诊断当前会员体系成熟度，识别关键断层，规划升级路径...';
         this.charIndex = 0;
+        this.typewriterTimer = null;
+        this.particlesCreated = false;
+        this.sidebarInitialized = false;
     }
 
-    // 打字机效果
+    // 打字机效果（重试时可从头播放，不残留旧文本）
     startTypewriter() {
         const el = document.getElementById('typewriter');
         if (!el) return;
+
+        clearTimeout(this.typewriterTimer);
+        this.charIndex = 0;
+        el.textContent = '';
 
         const type = () => {
             if (this.charIndex < this.typewriterText.length) {
                 el.textContent = this.typewriterText.substring(0, this.charIndex + 1);
                 this.charIndex++;
-                setTimeout(type, 45);
+                this.typewriterTimer = setTimeout(type, 45);
             }
         };
         type();
     }
 
     // 渲染统计卡片
-    renderStats() {
+    renderStats(useFade = false) {
         const container = document.getElementById('statsGrid');
         if (!container) return;
 
         container.innerHTML = statsData.map((stat, index) => `
-            <div class="glass-card stat-card fade-in delay-${index + 1}" data-index="${index}">
+            <div class="glass-card stat-card${useFade ? ` fade-in delay-${index + 1}` : ''}" data-index="${index}">
                 <span class="stat-icon">${stat.icon}</span>
                 <div class="stat-value">${stat.value}</div>
                 <div class="stat-label">${stat.label}</div>
@@ -67,7 +74,7 @@ class ComponentRenderer {
         html += '</tr></thead><tbody>';
 
         matrixData.dimensions.forEach((dim, dimIndex) => {
-            html += `<tr class="fade-in delay-${Math.min(dimIndex + 1, 5)}">`;
+            html += `<tr>`;
             html += `
                 <td class="dimension-cell">
                     <span class="dimension-icon">${dim.icon}</span>
@@ -128,12 +135,12 @@ class ComponentRenderer {
     }
 
     // 渲染速赢行动清单
-    renderQuickWins() {
+    renderQuickWins(useFade = false) {
         const grid = document.getElementById('quickwinsGrid');
         if (!grid) return;
 
         grid.innerHTML = quickWins.map((qw, i) => `
-            <div class="glass-card quickwin-card fade-in delay-${i + 1}" data-index="${i}">
+            <div class="glass-card quickwin-card${useFade ? ` fade-in delay-${i + 1}` : ''}" data-index="${i}">
                 <div class="quickwin-number">${i + 1}</div>
                 <div class="quickwin-header">
                     <div class="quickwin-icon">${qw.icon}</div>
@@ -168,10 +175,11 @@ class ComponentRenderer {
         });
     }
 
-    // 创建粒子效果
+    // 创建粒子效果（仅一次；首屏加载期间背景层持续播放，重试不重复生成）
     createParticles() {
         const container = document.querySelector('.particles');
-        if (!container) return;
+        if (!container || this.particlesCreated) return;
+        this.particlesCreated = true;
 
         const colors = ['#a855f7', '#ec4899', '#06b6d4', '#10b981'];
         
@@ -302,14 +310,20 @@ class ComponentRenderer {
         });
     }
 
-    // 初始化所有组件
-    init() {
+    // 启动背景与侧栏（加载前即可就绪，不依赖数据区块）
+    bootBackground() {
         this.createParticles();
-        this.startTypewriter();
-        this.renderStats();
-        this.renderMatrix();
-        this.renderQuickWins();
+    }
+
+    bootSidebar() {
+        if (this.sidebarInitialized) return;
+        this.sidebarInitialized = true;
         this.initSidebar();
+    }
+
+    // 所有内容就绪后的收尾
+    onContentReady() {
+        this.startTypewriter();
 
         // 显示欢迎提示
         setTimeout(() => {
@@ -318,7 +332,7 @@ class ComponentRenderer {
                 '数据已加载完成，点击各模块查看详情',
                 5000
             );
-        }, 1000);
+        }, 700);
     }
 }
 
