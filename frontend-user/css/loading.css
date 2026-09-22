@@ -1,0 +1,436 @@
+/* ========================================
+   首屏加载系统
+   - 占位骨架块 / 加载概览 / 失败重试
+   - 不修改滚动条与玻璃卡片既有观感
+   - 所有过渡使用固定时长，窄屏宽屏节奏一致
+   ======================================== */
+
+/* ========== 占位层容器 ========== */
+.lm-target {
+    position: relative;
+}
+
+.lm-layer {
+    position: relative;
+    width: 100%;
+    pointer-events: none;
+}
+
+/* 宿主本身是网格时（指标卡 / 速赢清单），占位层须跨满整行，不能只占一格 */
+.stats-grid > .lm-layer,
+.quickwins-grid > .lm-layer {
+    grid-column: 1 / -1;
+}
+
+/* 覆盖模式：覆盖在真实内容上方做交叉淡入淡出 */
+.lm-layer.is-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+}
+
+/* 就绪后平滑淡出，由真实内容（自带 fade-in）同步淡入 */
+.lm-layer.is-leaving {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+/* 覆盖模式下的网格骨架需要底色，防止交叉淡入时与真实卡片文字叠影 */
+.stats-grid > .lm-layer.is-overlay,
+.quickwins-grid > .lm-layer.is-overlay {
+    background: rgba(10, 10, 18, 0.92);
+    border-radius: var(--radius-lg);
+}
+
+/* ========== 微光扫块 ========== */
+.lm-shimmer {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        rgba(168, 85, 247, 0.08) 0%,
+        rgba(168, 85, 247, 0.22) 45%,
+        rgba(236, 72, 153, 0.18) 55%,
+        rgba(168, 85, 247, 0.08) 100%
+    );
+    background-size: 400px 100%;
+    animation: lmShimmer 1.4s linear infinite;
+}
+
+@keyframes lmShimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+}
+
+/* ========== 网格类骨架（统计卡片 / 速赢清单） ========== */
+.lm-skel-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.lm-skel-stats {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.lm-skel-quickwins {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.lm-skel-card {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 196px;
+}
+
+.lm-skel-quickwins .lm-skel-card {
+    align-items: flex-start;
+    min-height: 290px;
+}
+
+.lm-skel-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    margin-bottom: 18px;
+}
+
+.lm-skel-bar {
+    height: 14px;
+    border-radius: var(--radius-sm);
+}
+
+.lm-skel-bar + .lm-skel-bar {
+    margin-top: 12px;
+}
+
+.lm-w-30 { width: 30%; }
+.lm-w-40 { width: 40%; }
+.lm-w-50 { width: 50%; }
+.lm-w-60 { width: 60%; }
+.lm-w-70 { width: 70%; }
+.lm-w-80 { width: 80%; }
+.lm-w-90 { width: 90%; }
+
+.lm-skel-card .lm-skel-line-lg {
+    height: 30px;
+    width: 65%;
+}
+
+.lm-skel-card .lm-skel-line-sm {
+    height: 12px;
+    width: 45%;
+    margin-top: 16px;
+}
+
+.lm-skel-spacer {
+    flex: 1;
+}
+
+.lm-skel-kpis {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.lm-skel-kpis .lm-shimmer {
+    flex: 1;
+    height: 52px;
+    border-radius: var(--radius-md);
+}
+
+/* ========== 图表骨架 ========== */
+.lm-chart-skel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: rgba(10, 10, 18, 0.94);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.lm-skel-spinner {
+    width: 44px;
+    height: 44px;
+}
+
+.lm-skel-caption {
+    width: 180px;
+    height: 12px;
+}
+
+.lm-skel-chart-deco {
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.lm-skel-chart-deco .lm-deco-line {
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    height: 10px;
+}
+
+.lm-skel-chart-deco .lm-deco-line:nth-child(1) { top: 22%; width: 70%; }
+.lm-skel-chart-deco .lm-deco-line:nth-child(2) { top: 42%; width: 55%; }
+.lm-skel-chart-deco .lm-deco-line:nth-child(3) { top: 62%; width: 40%; }
+.lm-skel-chart-deco .lm-deco-line:nth-child(4) { bottom: 12%; width: 84%; height: 16px; }
+
+/* ========== 矩阵骨架 ========== */
+.lm-matrix-skel {
+    min-width: 1200px;
+    padding: 4px 0;
+}
+
+.lm-skel-row {
+    display: grid;
+    grid-template-columns: 150px repeat(3, 1fr);
+    gap: 0;
+}
+
+.lm-skel-head .lm-shimmer {
+    height: 46px;
+    margin: 2px;
+}
+
+.lm-skel-body-row {
+    align-items: stretch;
+}
+
+.lm-skel-body-row .lm-shimmer {
+    height: 128px;
+    margin: 6px 8px;
+}
+
+.lm-matrix-skel .lm-skel-body-row + .lm-skel-body-row .lm-shimmer {
+    opacity: 0.85;
+}
+
+/* 矩阵覆盖层需要底色，避免交叉淡入时与表格叠影 */
+.lm-layer.is-overlay.lm-layer-matrix {
+    background: rgba(10, 10, 18, 0.92);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* ========== 失败态 ========== */
+.lm-layer.is-error .lm-shimmer {
+    animation-play-state: paused;
+    opacity: 0.28;
+}
+
+.lm-error {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    text-align: center;
+    background: rgba(10, 10, 18, 0.72);
+    border-radius: var(--radius-lg);
+    pointer-events: auto;
+}
+
+.lm-error-icon {
+    font-size: 34px;
+    line-height: 1;
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.5));
+}
+
+.lm-error-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.lm-btn-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    border-radius: var(--radius-full);
+    background: var(--gradient-purple-pink);
+    box-shadow: 0 2px 12px rgba(168, 85, 247, 0.35);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    pointer-events: auto;
+}
+
+.lm-btn-retry:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(168, 85, 247, 0.55);
+}
+
+.lm-btn-retry.is-mini {
+    padding: 3px 10px;
+    font-size: 11px;
+}
+
+/* ========== 加载概览区域 ========== */
+.loading-overview {
+    margin-bottom: 40px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.loading-overview.is-leaving {
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+/* 收起阶段：高度/外边距/内边距同步收合，避免下方区块整体上跳 */
+.loading-overview.is-collapsing {
+    opacity: 0;
+    transform: translateY(-8px);
+    overflow: hidden;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    transition: opacity 0.45s ease, transform 0.45s ease,
+        max-height 0.45s ease, margin-bottom 0.45s ease,
+        padding-top 0.45s ease, padding-bottom 0.45s ease;
+}
+
+.lo-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.lo-spinner {
+    width: 26px;
+    height: 26px;
+    border-width: 2.5px;
+    flex-shrink: 0;
+}
+
+.lo-state-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.lo-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.lo-progress {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.lo-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px 16px;
+}
+
+.lo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(168, 85, 247, 0.06);
+    border: 1px solid rgba(168, 85, 247, 0.14);
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.lo-row.is-done {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.06);
+    color: var(--text-primary);
+}
+
+.lo-row.is-error {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.lo-row-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lo-row-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.lo-mini-spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
+}
+
+.lo-status-done { color: var(--neon-green); }
+.lo-status-error { color: var(--error); }
+
+.lo-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.lo-actions[hidden] {
+    display: none;
+}
+
+/* ========== 响应式：与真实区块保持同一组断点 ========== */
+@media (max-width: 1200px) {
+    .lm-skel-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .lm-skel-quickwins {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .lm-skel-stats,
+    .lm-skel-quickwins {
+        grid-template-columns: 1fr;
+    }
+    .loading-overview {
+        padding: 16px 18px;
+    }
+}
+
+/* 尊重系统“减少动态效果”设置：固定节奏不变，仅关闭循环微光 */
+@media (prefers-reduced-motion: reduce) {
+    .lm-shimmer {
+        animation: none;
+    }
+}

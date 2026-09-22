@@ -302,23 +302,13 @@ class ComponentRenderer {
         });
     }
 
-    // 初始化所有组件
+    // 初始化环境组件（粒子、打字机、侧栏）。
+    // 数据区块（指标卡 / 矩阵 / 速赢清单）的渲染由 loadingManager 编排，
+    // 确保占位骨架先于真实内容出现。
     init() {
         this.createParticles();
         this.startTypewriter();
-        this.renderStats();
-        this.renderMatrix();
-        this.renderQuickWins();
         this.initSidebar();
-
-        // 显示欢迎提示
-        setTimeout(() => {
-            window.toast.success(
-                '欢迎使用诊断驾驶舱',
-                '数据已加载完成，点击各模块查看详情',
-                5000
-            );
-        }, 1000);
     }
 }
 

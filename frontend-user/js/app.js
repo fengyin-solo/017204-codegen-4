@@ -11,12 +11,11 @@ class App {
         if (this.initialized) return;
         this.initialized = true;
 
-        // 初始化组件
+        // 初始化环境组件（粒子、打字机、侧栏），背景动画层不受加载流程影响
         window.componentRenderer.init();
 
-        // 初始化图表
-        window.chartManager.initFunnelChart('funnelChart');
-        window.chartManager.initRadarChart('radarChart');
+        // 启动首屏加载：占位骨架 → 数据/图表就绪 → 淡入替换（失败可重试）
+        window.loadingManager.start();
 
         // 监听窗口大小变化
         window.addEventListener('resize', this.handleResize.bind(this));
@@ -46,16 +45,14 @@ class App {
         }
     }
 
-    // 刷新数据
+    // 刷新数据：占位块兜底清理后重渲染；存在失败区块时走重新加载流程
     refresh() {
         window.toast.info('刷新中', '正在重新加载数据...');
-        
+
         setTimeout(() => {
-            window.componentRenderer.renderStats();
-            window.componentRenderer.renderMatrix();
-            window.componentRenderer.renderQuickWins();
+            window.loadingManager.refresh();
             window.chartManager.resize();
-            
+
             window.toast.success('刷新完成', '数据已更新');
         }, 1000);
     }
